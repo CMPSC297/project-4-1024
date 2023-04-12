@@ -1,46 +1,65 @@
 from django.contrib.auth import authenticate, login, logout
-from django.db import IntegrityError
-from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import render
+from django.db.models import Q
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.shortcuts import render, get_object_or_404
 from django.urls import reverse
 from django.core.paginator import Paginator
-import json
-from django.http import JsonResponse
-
 from .models import User, Post, Follow, Like
 
+def like(request, id):
+
+    try:
+        css_class = 'fas fa-heart'
+        user = User.objects.get(id=request.session['_auth_user_id'])
+        post = Post.objects.get(id=id)
+        like = Like.objects.get_or_create(
+            user=user, post=post)
+        if not like[1]:
+            css_class = 'far fa-heart'
+            Like.objects.filter(user=user, post=post).delete()
+
+        total_likes = Like.objects.filter(post=post).count()
+    except KeyError:
+        return HttpResponseBadRequest("Bad Request: no like chosen")
+    return JsonResponse({
+        "like": id, "css_class": css_class, "total_likes": total_likes
+    })
+
+
 def remove_like(request, post_id):
-    post = Post.objects.get(pk=post_id)
-    user = User.objects.get(pk=request.user.id)
-    like = Like.objects.filter(user=user, post=post)
-    like.delete()
-    return JsonResponse({"message": "Like removed!"})
+    post = get_object_or_404(Post, id=post_id)
+    user = request.user
+    like = Like.objects.filter(user=user, post=post).first()
+    if like:
+        like.delete()
+        return JsonResponse({"message": "Like removed!"})
+    return JsonResponse({"message": "No such like exists"})
+
 
 def add_like(request, post_id):
-    post = Post.objects.get(pk=post_id)
-    user = User.objects.get(pk=request.user.id)
-    newLike = Like(user=user, post=post)
-    newLike.save()
-    return JsonResponse({"message": "Like added!"})
+    post = get_object_or_404(Post, id=post_id)
+    user = request.user
+    new_like, created = Like.objects.get_or_create(user=user, post=post)
+    if created:
+        return JsonResponse({"message": "Like added!"})
+    return JsonResponse({"message": "You already liked this post"})
+
 
 def edit(request, post_id):
     if request.method == "POST":
-        data = json.loads(request.body)
-        edit_post = Post.objects.get(pk=post_id)
-        edit_post.content = data["content"]
-        edit_post.save()
+        data = request.POST
+        post = get_object_or_404(Post, id=post_id, user=request.user)
+        post.content = data["content"]
+        post.save()
         return JsonResponse({"message": "Change successful", "data": data["content"]})
 
+
 def index(request):
-    allPosts = Post.objects.all().order_by("id").reverse()
-    
-    # Pagination
-    paginator = Paginator(allPosts, 10)
+    all_posts = Post.objects.all().order_by("-id")
+    paginator = Paginator(all_posts, 10)
     page_number = request.GET.get('page')
     posts_of_the_page = paginator.get_page(page_number)
-    
-    allLikes = Like.objects.all()
-    
+    all_likes = Like.objects.all()
     whoYouLiked = []
     try:
         for like in allLikes:
@@ -48,90 +67,64 @@ def index(request):
                 whoYouLiked.append(like.post.id)
     except:
         whoYouLiked = []
-    
     return render(request, "network/index.html", {
-        "allPosts": allPosts,
+        "all_posts": all_posts,
         "posts_of_the_page": posts_of_the_page,
-        "whoYouLiked": whoYouLiked
+        "who_you_liked": whoYouLiked
     })
+
 
 def newPost(request):
     if request.method == "POST":
-        content = request.POST['content']
-        user = User.objects.get(pk=request.user.id)
-        post = Post(content=content, user=user)
-        post.save()
+        content = request.POST.get('content')
+        user = request.user
+        post = Post.objects.create(content=content, user=user)
         return HttpResponseRedirect(reverse(index))
-    
+
+
 def profile(request, user_id):
-    user = User.objects.get(pk=user_id)
-    allPosts = Post.objects.filter(user=user).order_by("id").reverse()
-    
+    user = get_object_or_404(User, id=user_id)
+    all_posts = Post.objects.filter(user=user).order_by("-id")
     following = Follow.objects.filter(user=user)
     followers = Follow.objects.filter(user_follower=user)
-    
-    try:
-        checkFollow = followers.filter(user=User.objects.get(pk=request.user.id))
-        if len(checkFollow) != 0:
-            isFollowing = True
-        else:
-            isFollowing = False
-    except:
-        isFollowing = False
-    
-    # Pagination
-    paginator = Paginator(allPosts, 10)
+    is_following = followers.filter(user=request.user).exists()
+    paginator = Paginator(all_posts, 10)
     page_number = request.GET.get('page')
     posts_of_the_page = paginator.get_page(page_number)
-    
     return render(request, "network/profile.html", {
-        "allPosts": allPosts,
+        "all_posts": all_posts,
         "posts_of_the_page": posts_of_the_page,
         "username": user.username,
         "following": following,
         "followers": followers,
-        "isFollowing": isFollowing,
+        "is_following": is_following,
         "user_profile": user
     })
     
+
 def following(request):
-    currentUser = User.objects.get(pk=request.user.id)
-    followingPeople = Follow.objects.filter(user=currentUser)
-    allPosts = Post.objects.all().order_by('id').reverse()
-    
-    followingPosts = []
-    
-    for post in allPosts:
-        for person in followingPeople:
-            if person.user_follower == post.user:
-                followingPosts.append(post)
-                
-    # Pagination
-    paginator = Paginator(followingPosts, 10)
+    following_people = Follow.objects.filter(user=request.user)
+    following_posts = Post.objects.filter(user__in=following_people.values('user_follower')).order_by('-id')
+    paginator = Paginator(following_posts, 10)
     page_number = request.GET.get('page')
     posts_of_the_page = paginator.get_page(page_number)
-    
     return render(request, "network/following.html", {
         "posts_of_the_page": posts_of_the_page
     })
-    
+
+
 def follow(request):
     userfollow = request.POST['userfollow']
-    currentUser = User.objects.get(pk=request.user.id)
-    userfollowData = User.objects.get(username=userfollow)
-    f = Follow(user=currentUser, user_follower=userfollowData)
-    f.save()
-    user_id = userfollowData.id
-    return HttpResponseRedirect(reverse(profile, kwargs={'user_id': user_id}))
+    userfollow_data = get_object_or_404(User, username=userfollow)
+    Follow.objects.get_or_create(user=request.user, user_follower=userfollow_data)
+    return redirect('profile', user_id=userfollow_data.id)
+
 
 def unfollow(request):
     userfollow = request.POST['userfollow']
-    currentUser = User.objects.get(pk=request.user.id)
-    userfollowData = User.objects.get(username=userfollow)
-    f = Follow.objects.get(user=currentUser, user_follower=userfollowData)
-    f.delete()
-    user_id = userfollowData.id
-    return HttpResponseRedirect(reverse(profile, kwargs={'user_id': user_id}))
+    userfollow_data = get_object_or_404(User, username=userfollow)
+    Follow.objects.filter(user=request.user, user_follower=userfollow_data).delete()
+    return redirect('profile', user_id=userfollow_data.id)
 
 def login_view(request):
     if request.method == "POST":

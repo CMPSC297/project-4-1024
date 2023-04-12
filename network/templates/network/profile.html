@@ -1,51 +1,72 @@
 {% extends "network/layout.html" %}
 
 {% block body %}
-    <h1>{{ username }}</h1>
-
-    <div class="container">
-        <div class="row d-flex justify-content-center">
-            <h3 class="col-4">Followers:{{followers.count}}</h3>
-            <h3 class="col-4">Following:{{following.count}}</h3>
-            {% if user.is_authenticated %}
-                {% if user != user_profile %}
-                    {% if isFollowing %}
-                        <form action="{% url 'unfollow' %}" method="Post">
-                            {% csrf_token %}
-                            <input type="hidden" name="userfollow" value="{{ user_profile }}"/>
-                            <input type="submit" value="Unfollow"/>
-                        </form>
-                    {% else %}
-                        <form action="{% url 'follow' %}" method="Post">
-                            {% csrf_token %}
-                            <input type="hidden" name="userfollow" value="{{ user_profile }}"/>
-                            <input type="submit" value="Fowllow"/>
-                        </form>
-                    {% endif %}
-                {% endif %}
-            {% endif %}
-        </div>
-    </div>
-
-    <div class="all-posts">
-        {% for post in posts_of_the_page %}
-            <div class="row post">
-                <h5 class="username"><a href="{% url 'profile' user_id=post.user.id %}">@{{post.user}}</a></h5>
-                <h6 class="content">{{post.content}}</h6>
-                <p class="date">{{post.date}}</p>
+    <div class="container mt-5">
+        <div class="card">
+            <div class="card-body">
+                <h1 class="card-title">{{username}}</h1>
+                <h5 class="card-text"><span id="sp_following">{{followers.count}}</span> Following</h5>
+                <h5 class="card-text"><span id="sp_followers">{{following.count}}</span> Followers</h5>
+                <p class="card-text"><small class="text-muted"></small></p>
+                {% if user.is_authenticated and user.id != user_profile.id %}
+                <p class="card-text">
+                {% if is_following > 0 %}
+                    <button id="btnfollow" data-id="{{user_profile.id}}" type="button" class="btn btn-primary">Following</button>
+                {% else %}
+                    <button id="btnfollow" data-id="{{user_profile.id}}" type="button" class="btn btn-outline-primary">Follow</button>
+                {%endif%}
+                </p>
+                {%endif%}
             </div>
-        {% endfor %}
-    </div>
+        </div>
 
-    <nav aria-label="Page navigation example">
-        <ul class="pagination d-flex  justify-content-center">
-            {% if posts_of_the_page.has_previous %}
-                <li class="page-item"><a class="page-link" href="?page={{posts_of_the_page.previous_page_number}}">Previous</a></li>
-            {% endif %}
-            {% if posts_of_the_page.has_next %}
-                <li class="page-item"><a class="page-link" href="?page={{posts_of_the_page.next_page_number}}">Next</a></li>
-            {% endif %}
-        
-        </ul>
-    </nav>
+        <div class="row">
+            <div class="col">
+                <div class="card">
+                    <div class="card-body">
+                        {% if posts_of_the_page %}
+                            {% for post in posts_of_the_page %}
+                                {%if post.user_id == user.id %}
+                                <a href="#" class="card-link" id="edit_link_{{post.id}}" data-id="{{post.id}}" data-toggle="modal">Edit</a>
+                                {%endif%}
+                                <h5 class="card-title">@{{ post.user }}</h5>
+                                <p class="card-text">{{ post.content }}</p>
+                                <p class="card-text"><small class="text-muted">{{ post.date }}</small></p>
+                                <hr>
+                                <p class="card-text">
+                                    <div data-id="{{post.id}}"
+                                        class="card-link {% if post.current_like > 0 %} fas {%else%} far {% endif %} fa-heart">&nbsp<small
+                                            class="text-muted">{{post.like_set.count}}</small>
+                                            </div>
+                                </p>
+                            {% endfor %}
+                            <p class="card-text"><small class="text-muted">{{post.post_date}}</small></p>
+                        {% else %}
+                            <p class="text-center">No posts yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if posts_of_the_page.has_other_pages %}
+            <div class="row justify-content-center mt-4">
+                <nav aria-label="Page navigation example">
+                    <ul class="pagination">
+                        {% if posts_of_the_page.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ posts_of_the_page.previous_page_number }}">Previous</a>
+                            </li>
+                        {% endif %}
+
+                        {% if posts_of_the_page.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ posts_of_the_page.next_page_number }}">Next</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+        {% endif %}
+    </div>
 {% endblock %}
