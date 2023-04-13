@@ -1,0 +1,51 @@
+{% extends "network/layout.html" %}
+
+{% block body %}
+
+<h1>All Posts</h1>
+{% if not anonymous %}
+<h3>Create New Post</h3>
+<form class="post-form" action="{% url 'index' %}" method="post">
+    <div>
+        {% csrf_token %}
+        {{ form }}
+    </div>
+    <button type="submit" class="submit-btn">Post</button>
+</form>
+{% endif %}
+
+
+<ul>
+    {% for post in posts %}
+    <li class="post-item">
+        <div class="post-header">
+            <h2 class="post-title"><a href="{% url 'profile'  post.user_name.id %}">{{ post.user_name }}</a></h2>
+            <p class="post-content">{{ post.content }}</p>
+        </div>
+        <div class="post-footer">
+            <div class="post-likes">
+                <div class="like-section">
+                    <ion-icon name="heart">
+                        <div class='red-bg'></div>
+                    </ion-icon>
+                    <p class="likes-count">{{ post.likes }} Likes</p>
+                </div>
+            </div>
+            <p class="post-date">{{ post.post_date|date:"F j, Y, g:i a" }}</p>
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+
+<!-- add event listener for submit button -->
+<script type="text/javascript">
+    for (var i = 0; i < document.querySelectorAll("ion-icon").length; i++) {
+        let icon = document.querySelectorAll("ion-icon")[i];
+        icon.onclick = function () {
+            icon.classList.toggle('active');
+        }
+    }
+</script>
+
+
+{% endblock %}
