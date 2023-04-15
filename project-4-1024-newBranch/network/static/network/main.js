@@ -2,7 +2,6 @@
 function like_post(postId) {
     const icon = document.getElementById(postId);
     icon.classList.toggle('active');
-    // is there error handling for fetch?
     fetch(`/like/${postId}`)
         .then(response => response.json())
         .then(result => {

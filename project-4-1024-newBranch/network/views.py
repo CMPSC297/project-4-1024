@@ -7,6 +7,7 @@ from django import forms
 from django.core.paginator import Paginator
 import json
 from .models import User, Post, Friend
+from datetime import datetime
 
 #using forms library
 class NewPostForm(forms.Form):
@@ -133,14 +134,14 @@ def edit(request, postId):
     print("save")
     if request.method == "POST":
         new_content = json.loads(request.body)
-        post_content = new_content["new_content"]
-        #delete the old post
-        Post.objects.filter(pk=postId).delete()
-        #add the new post instead of insert
-        newpost = Post.objects.create(content=post_content, user_name=request.user)
+        post.content = new_content["new_content"]
+        post.post_date = datetime.utcnow()
+        post.save()
+        # get the edit save date
+        post = Post.objects.get(pk=postId)
         return JsonResponse({
-            "content": newpost.content,
-            "date": newpost.post_date.strftime("%Y-%m-%d %H:%M:%S")
+            "content": post.content,
+            "date": post.post_date.strftime("%Y-%m-%d %H:%M:%S")
         })
     return JsonResponse({"error": f"Can't edit the post"})
 
