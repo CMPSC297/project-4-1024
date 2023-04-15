@@ -1,0 +1,84 @@
+{% extends "network/layout.html" %}
+{% load static %}
+
+{% block scripts %}
+<script src="{% static 'network/main.js' %}" defer></script>
+{% endblock scripts %}
+
+{% block body %}
+<h1>All Posts</h1>
+{% if not anonymous %}
+<ul>
+    <form class="post-form" action="{% url 'index' %}" method="post">
+        <div>
+            {% csrf_token %}
+            {{ form }}
+        </div>
+        <button type="submit" class="submit-btn">Post</button>
+    </form>
+</ul>
+{% endif %}
+
+<ul>
+    {% for post in posts_of_the_page %}
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="row">
+                <div class="col">
+                    <h5 class="card-title mb-3"><a href="{% url 'profile'  post.user_name.id %}">{{ post.user_name}}</a>
+                    </h5>
+                </div>
+                <div class="col-4 text-end">
+                    <h6 class="post-date" id="date{{ post.id }}">{{ post.post_date|date:'Y-m-d H:i' }}</h6>
+                </div>
+            </div>
+            <p class="card-text" id="text{{ post.id }}">{{ post.content }}</p>
+        </div>
+        {% if not anonymous %}
+        <div class="card-footer" id="footer{{ post.id }}">
+            <div class="row">
+                <div class="col-10" id="like-section">
+                    {% if post in likedPosts %}
+                    <ion-icon id="{{ post.id }}" name="heart" class="active" onclick="like_post('{{ post.id }}')">
+                        <div class='red-bg'></div>
+                    </ion-icon>
+                    <span class="ms-2 likes-count" id="count{{ post.id }}">{{ post.like_count }} likes</span>
+                    {% else %}
+                    <ion-icon id="{{ post.id }}" name="heart" onclick="like_post('{{ post.id }}')">
+                        <div class='red-bg'></div>
+                    </ion-icon>
+                    <span class="ms-2 likes-count" id="count{{ post.id }}">{{ post.like_count }} likes</span>
+                    {% endif %}
+                </div>
+                {% if request.user == post.user_name %}
+                <div class="col-2 text-end">
+                    <button type="button" id="edit{{ post.id }}" class="btn btn-primary"
+                        onclick="edit_post(`{{ post.id }}`)">Edit</button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="card-footer" id="footer{{ post.id }}">
+            <span class="ms-2 likes-count" id="count{{ post.id }}">{{ post.like_count }} likes</span>
+        </div>
+        {% endif %}
+    </div>
+
+    {% endfor %}
+</ul>
+
+<nav aria-label="Page navigation example">
+    <ul class="pagination d-flex  justify-content-center">
+        {% if posts_of_the_page.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{posts_of_the_page.previous_page_number}}">Previous</a ></li>
+        {% endif %}
+        {% if posts_of_the_page.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{posts_of_the_page.next_page_number}}">Next</a ></li>
+        {% endif %}
+    
+    </ul>
+</nav>
+
+
+{% endblock %}
