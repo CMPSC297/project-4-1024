@@ -1,7 +1,25 @@
 # project-4-1024
-project-4-1024 created by GitHub Classroom
+# Social Network
+This is a simple social network web application built with Python, Flask, JavaScript, HTML, and CSS.
 
-index.html:
+# Functionality
+The social network allows users to perform the following actions:
+
+Create a new text-based post by filling in text into a text area and then clicking a button to submit the post.
+
+View all posts from all users, with the most recent posts first.
+
+View a user's profile page, which displays the number of followers the user has, as well as the number of people that the user follows, and all of the posts for that user in reverse chronological order.
+
+Follow or unfollow other users' posts from their profile page.
+
+View all posts made by users that the current user follows.
+
+Edit their own posts by clicking an "Edit" button or link on any of their own posts.
+
+Like or unlike any post by clicking a button or link on the post.
+
+# index.html:
 This is a Django template file that generates HTML code for the "All Posts" page of a social network web application. The page displays a list of posts made by users, and allows logged-in users to create new posts and edit their own posts.
 
 The template extends a base layout file and includes a block named "scripts", which includes a JavaScript file called "main.js" that provides client-side functionality for the page. The block named "body" defines the main content of the page.
@@ -14,12 +32,12 @@ The "Like" button is implemented as an ion-icon element that toggles its "active
 
 The "Edit" button is implemented as a Bootstrap button that calls the "edit_post" JavaScript function when clicked. This function replaces the content of the post card with a textarea element, and adds a "Save" button and a "Cancel" button to the card footer. When the user clicks the "Save" button, the function sends a fetch request to the server to update the content of the post, and replaces the textarea with the updated content. If the user clicks the "Cancel" button, the function replaces the textarea with the original content.
 
-profile.html:
+# profile.html:
 This is a Django template for rendering a user's profile page. It extends a base layout template and defines a block for the page body. The body includes the user's follower and following counts, and a button to follow or unfollow the user depending on whether the profile belongs to the current user or not.
 
 The template also includes a loop that iterates over the user's posts and renders them as cards. Each post card includes the post content, the user who posted it, the post date, the number of likes it has received, and an icon that the user can click to like or unlike the post. If the post was already liked by the current user, the icon is highlighted in red. If the post belongs to the current user, an edit button is displayed that allows the user to edit the post.
 
-following.html:
+# following.html:
 This is a Django template for the "following" page of the social network web application. The page displays a list of posts made by users that the currently logged in user is following.
 
 The template extends the base layout template "network/layout.html" and loads the static files required for the page. It contains two blocks: "scripts" and "body".
@@ -30,7 +48,7 @@ The "body" block displays a header with the text "Following" and a list of posts
 
 The template uses Django template language syntax to generate dynamic content, such as iterating over a list of posts to display them on the page, generating URLs to link to user profiles, and checking if the currently logged in user has liked a post to display the appropriate heart icon.
 
-main.js:
+# main.js:
 The code is a Django template file that displays a list of posts from the users that the current user is following. Each post is displayed in a card with its content, author, date, and the number of likes. The user can like a post by clicking on the heart icon and edit their own post by clicking on the edit button.
 
 The JavaScript code in the template file contains two functions, like_post and edit_post.
@@ -44,7 +62,7 @@ The update_edit function is called by the edit_post function when the fetch requ
 
 There is also a getCookie function that is called by the edit_post function to get the value of the CSRF token cookie.
 
-view.py:
+# view.py:
 index view function: This view function handles the homepage of the application. It accepts GET and POST requests. When a user submits a new post via a POST request, it validates the form data, creates a new Post object and inserts it into the database. Then, it redirects the user to the homepage. If the request is a GET request, it retrieves all the posts from the database and renders the homepage template with the posts, a form to submit a new post and a list of liked posts for the current user.
 
 profile view function: This view function handles the user profile page. It accepts a GET request with a user_id parameter to identify the user whose profile is being viewed. It retrieves all the posts by the user and renders the profile template with the posts, the user's follower and following count, and a list of liked posts for the current user.
